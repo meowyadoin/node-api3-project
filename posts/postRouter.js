@@ -1,69 +1,85 @@
-const express = require('express');
-const database = require('./postDb')
+const express = require("express");
+
+const postDb = require("./postDb");
+
 const router = express.Router();
 
-router.get('/', (req, res) => {
-  // do your magic!
-  database.get()
-    .then(data => {
-      res.status(200).json(data)
+//get all posts
+router.get("/", (req, res) => {
+  postDb
+    .get()
+    .then(post => {
+      res.status(200).json(post);
     })
     .catch(err => {
+      console.log(err);
       res.status(500).json({
-        message: 'Server side error'
-      })
-    })
+        errorMessage: "Error getting posts"
+      });
+    });
 });
 
-router.get('/:id', validatePostId, (req, res) => {
-  database.getById(req.params.id)
-    .then(data => {
-      res.status(201).json(data)
+//get a particular post by id
+router.get("/:id", validatePostId, (req, res) => {
+  const id = req.params.id;
+  postDb
+    .getById(id)
+    .then(post => {
+      res.status(200).json(post);
     })
     .catch(err => {
-      res.status(500).json({ message: '500 error' })
-    })
+      console.log(err);
+      res.status(500).json({
+        errorMessage: "Error invaild post ID"
+      });
+    });
 });
 
-router.delete('/:id', validatePostId, (req, res) => {
-  // do your magic!
-  database.remove(req.params.id)
-    .then(() => {
-      res.status(200).json({ message: 'delete successful' })
+//remove a post
+
+router.delete("/:id", validatePostId, (req, res) => {
+  const id = req.params.id;
+  postDb
+    .remove(id)
+    .then(post => {
+      res.status(200).json(post);
     })
     .catch(err => {
-      res.status(500).json({ message: '500 error' })
-    })
-
+      console.log(err);
+      res.status(500).json({
+        errorMessage: "Error deleting post"
+      });
+    });
 });
 
-router.put('/:id', validatePostId, (req, res) => {
-  // do your magic!
-  database.update(req.params.id, req.body)
-    .then(() => {
-      res.status(200).json({ message: 'update successful' })
+//update a particular post
+router.put("/:id", validatePostId, (req, res) => {
+  const id = req.params.id;
+  const changes = req.body;
+  postDb
+    .update(id, changes)
+    .then(post => {
+      res.status(200).json(post);
     })
     .catch(err => {
-      res.status(500).json({ message: '500 error' })
-    })
+      console.log(err);
+      res.status(500).json({
+        errorMessage: "Error updating post"
+      });
+    });
 });
 
 // custom middleware
 
 function validatePostId(req, res, next) {
-  database.getById(req.params.id)
-    .then(data => {
-
-      console.log(data.id)
-      req.user = data
-      next()
-
-
-
-    })
-    .catch(err => {
-      res.status(400).json({ message: "invalid user id" })
-    })
+  postDb.getById(req.params.id).then(post => {
+    if (post) {
+      req.post = post;
+      next();
+    } else {
+      res.status(400).json({ Message: "Invalid post ID" });
+    }
+  });
 }
 
 module.exports = router;

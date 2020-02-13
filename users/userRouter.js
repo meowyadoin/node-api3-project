@@ -1,129 +1,155 @@
-const express = require('express');
-const database = require('./userDb')
-const postdatabase = require('../posts/postDb')
+const express = require("express");
+const userDb = require("./userDb");
+const posts = require("../posts/postDb");
+
 const router = express.Router();
 
-router.post('/', (req, res) => {
-  database.insert(req.body)
-    .then(() => {
-      res.status(200).json({ message: 'user creation: successful' })
+router.post("/", validateUser, (req, res) => {
+  // do your magic!
+  userDb
+    .insert(req.body)
+    .then(user => {
+      res.status(201).json(user);
     })
     .catch(err => {
-      res.status(500).json({ message: '500 error' })
-    })
+      console.log(err);
+      res.status(500).json({
+        errorMessage: "There was an error creating the post"
+      });
+    });
 });
 
-router.post('/:id/posts', validateUser, validatePost, (req, res) => {
-  const { text } = req.body
-
-  const user_id = req.params.id
-  postdatabase.insert({ text, user_id })
-    .then(data => {
-      console.log(data.id)
-
-      res.status(201).json(data)
-
+router.post("/:id/posts", validateUserId, validatePost, (req, res) => {
+  // do your magic!
+  const id = req.params.id;
+  userDb
+    .insert({ ...req.body, user_id: id })
+    .then(user => {
+      res.status(201).json(user);
     })
+    .catch(err => {
+      console.log(err);
+      res.status(500).json({
+        errorMessage: "Error adding users.",
+        err
+      });
+    });
+});
 
+router.get("/", (req, res) => {
+  // do your magic!
+  userDb
+    .get()
+    .then(users => {
+      res.status(200).json(users);
+    })
     .catch(error => {
-      console.log(error)
+      console.log(error);
       res.status(500).json({
-        errorMessage: 'Error 500: This is a server side error. If this error persists contact your server admin. '
-      })
-    })
+        errorMessage: "Error retrieving users."
+      });
+    });
 });
 
-router.get('/', (req, res) => {
-  database.get()
-    .then(data => {
-      res.status(200).json(data)
-    })
-    .catch(err => {
-      res.status(500).json({
-        message: 'Server side error'
-      })
-    })
-});
-
-router.get('/:id', validateUserId, (req, res) => {
-  database.getById(req.params.id)
-    .then(data => {
-      res.status(201).json(data)
-    })
-    .catch(err => {
-      res.status(500).json({ message: '500 error' })
-    })
-});
-
-router.get('/:id/posts', (req, res) => {
-  database.getUserPosts(req.params.id)
-    .then(comments => {
-      if (comments[0]) {
-        res.status(200).json(comments)
+router.get("/:id", validateUserId, (req, res) => {
+  userDb
+    .getById(req.params.id)
+    .then(user => {
+      if (user) {
+        res.status(200).json(user);
       } else {
-        res.status(404).json({
-          errorMessage: "The post with the specified ID does not exist."
-        })
+        res.status(404).json({ message: "Hub not found" });
+      }
+    })
+    .catch(error => {
+      // log error to server
+      console.log(error);
+      res.status(500).json({
+        message: "Error retrieving the hub"
+      });
+    });
+});
+
+router.get("/:id/posts", validateUserId, (req, res) => {
+  // do your magic!
+  const id = req.params.id;
+  userDb
+    .getUserPosts(id)
+    .then(posts => {
+      if (posts.length > 0) {
+        res.status(200).json(posts);
+      } else {
+        res.status(400).json({ message: "no posts exists" });
       }
     })
     .catch(err => {
-      console.log(err)
+      console.log(err);
       res.status(500).json({
-        errorMessage: 'Error 500: This is a server side error. If this error persists contact your server admin. '
-      })
-    })
+        errorMessage: "Error getting posts"
+      });
+    });
 });
 
-router.delete('/:id', validateUser, (req, res) => {
-  database.remove(req.params.id)
-    .then(() => {
-      res.status(200).json({ message: 'delete: successful' })
-    })
-    .catch(err => {
-      res.status(500).json({ message: '500 error' })
-    })
+// Destroy a user
+router.delete("/:id", validateUserId, (req, res) => {
+  const id = req.params.id;
+  userDb.remove(id).then(user => {
+    res.status(200).json({
+      message: "User has been removed"
+    });
+  });
 });
 
-router.put('/:id', validateUser, (req, res) => {
-  database.update(req.params.id, req.body)
-    .then(() => {
-      res.status(200).json({ message: 'update: successful' })
+//update a user
+router.put("/:id", validateUserId, (req, res) => {
+  const id = req.params.id;
+  const changes = req.body;
+  userDb
+    .update(id, changes)
+    .then(user => {
+      res.status(200).json(user);
     })
     .catch(err => {
-      res.status(500).json({ message: '500 error' })
-    })
+      console.log(err);
+      res.status(500).json({
+        errorMessage: "User could NOT be updated"
+      });
+    });
 });
 
 //custom middleware
 
 function validateUserId(req, res, next) {
   // do your magic!
-  database.getById(req.params.id)
-    .then(data => {
-
-      console.log(data.id)
-      req.user = data
-      next()
-    })
-    .catch(err => {
-      res.status(400).json({ message: "invalid user id" })
-    })
+  userDb.getById(req.params.id).then(user => {
+    if (user) {
+      req.user = user;
+      next();
+    } else {
+      res.status(400).json({ Message: "Invalid user ID" });
+    }
+  });
 }
 
 function validateUser(req, res, next) {
   // do your magic!
-  if (!req.body.name) {
-    res.status(400).json({ message: 'nissing user data' })
+  if (!req.body) {
+    res.status(400).json({ message: "missing user data" });
+  } else if (!req.body.name) {
+    res.status(400).json({ message: "missing required name field" });
   } else {
-    next()
+    next();
   }
 }
 
 function validatePost(req, res, next) {
-  if (!req.body.text) {
-    res.status(400).json({ message: 'missing required text field' })
+  // do your magic!
+  if (!req.body) {
+    res.status(400).json({ message: "missing post data" });
+  } else if (!req.body.text) {
+    res.status(400).json({ message: "missing required text field" });
   } else {
-    next()
+    next();
   }
 }
 
