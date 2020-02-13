@@ -1,85 +1,27 @@
-const express = require("express");
-
-const postDb = require("./postDb");
+const express = require('express');
 
 const router = express.Router();
 
-//get all posts
-router.get("/", (req, res) => {
-  postDb
-    .get()
-    .then(post => {
-      res.status(200).json(post);
-    })
-    .catch(err => {
-      console.log(err);
-      res.status(500).json({
-        errorMessage: "Error getting posts"
-      });
-    });
+router.get('/', (req, res) => {
+  // do your magic!
 });
 
-//get a particular post by id
-router.get("/:id", validatePostId, (req, res) => {
-  const id = req.params.id;
-  postDb
-    .getById(id)
-    .then(post => {
-      res.status(200).json(post);
-    })
-    .catch(err => {
-      console.log(err);
-      res.status(500).json({
-        errorMessage: "Error invaild post ID"
-      });
-    });
+router.get('/:id', (req, res) => {
+  // do your magic!
 });
 
-//remove a post
-
-router.delete("/:id", validatePostId, (req, res) => {
-  const id = req.params.id;
-  postDb
-    .remove(id)
-    .then(post => {
-      res.status(200).json(post);
-    })
-    .catch(err => {
-      console.log(err);
-      res.status(500).json({
-        errorMessage: "Error deleting post"
-      });
-    });
+router.delete('/:id', (req, res) => {
+  // do your magic!
 });
 
-//update a particular post
-router.put("/:id", validatePostId, (req, res) => {
-  const id = req.params.id;
-  const changes = req.body;
-  postDb
-    .update(id, changes)
-    .then(post => {
-      res.status(200).json(post);
-    })
-    .catch(err => {
-      console.log(err);
-      res.status(500).json({
-        errorMessage: "Error updating post"
-      });
-    });
+router.put('/:id', (req, res) => {
+  // do your magic!
 });
 
 // custom middleware
 
 function validatePostId(req, res, next) {
-  postDb.getById(req.params.id).then(post => {
-    if (post) {
-      req.post = post;
-      next();
-    } else {
-      res.status(400).json({ Message: "Invalid post ID" });
-    }
-  });
+  // do your magic!
 }
 
 module.exports = router;
